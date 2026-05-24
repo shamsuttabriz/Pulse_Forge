@@ -1,5 +1,6 @@
 import express, { type Request, type Response } from "express";
 import { Pool } from "pg";
+import config from "./config";
 
 const app = express();
 
@@ -8,8 +9,7 @@ app.use(express.text());
 app.use(express.urlencoded({ extended: true }));
 
 const pool = new Pool({
-  connectionString:
-    "postgresql://neondb_owner:npg_WrzN6AGco1CQ@ep-long-smoke-ao1s2nkh-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
+  connectionString: config.connection_string,
 });
 
 const initDB = async () => {
@@ -19,7 +19,7 @@ const initDB = async () => {
             id SERIAL PRIMARY KEY,
 
             name VARCHAR(25),
-            email VARCHAR(255) NOT NULL,
+            email VARCHAR(25) UNIQUE NOT NULL,
             password VARCHAR(255) NOT NULL,
             role VARCHAR(50) NOT NULL,
 
@@ -29,7 +29,7 @@ const initDB = async () => {
         `);
     console.log("Database initialized successfully.");
   } catch (err) {
-    console.log(err);
+    console.error("Error initializing database:", err);
   }
 };
 
@@ -39,17 +39,126 @@ app.get("/", (req: Request, res: Response) => {
   res.status(200).json({ message: "Hello World!" });
 });
 
-app.post("/", (req: Request, res: Response) => {
-  const {name, email, password, role} = req.body;
-  res.status(200).json({
-    message: "User created successfully!",
-    user: {
-      name,
-      email,
-      password,
-      role
+app.post("/api/user", async (req: Request, res: Response) => {
+  const { name, email, password, role } = req.body;
+  try {
+    const result = await pool.query(
+      `
+    INSERT INTO users (name, email, password, role)
+    VALUES ($1, $2, $3, $4)
+    RETURNING *
+  `,
+      [name, email, password, role],
+    );
+    res.status(201).json({
+      success: true,
+      message: "User created successfully!",
+      data: result.rows[0],
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+      error: err,
+    });
+  }
+});
+
+app.get("/api/users", async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query("SELECT * FROM users");
+    res.status(200).json({
+      success: true,
+      message: "Users retrieved successfully!",
+      data: result.rows,
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+      error: err,
+    });
+  }
+});
+
+app.get("/api/users/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found!",
+      });
     }
-  });
-})
+    res.status(200).json({
+      success: true,
+      message: "User retrieved successfully!",
+      data: result.rows[0],
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+      error: err,
+    });
+  }
+});
+
+app.put("/api/users/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, password, role } = req.body;
+    const result = await pool.query(
+      `
+        UPDATE users SET name = COALESCE($1, name), password = COALESCE($2, password), role = COALESCE($3, role)
+        WHERE id = $4 RETURNING *
+      `,
+      [name, password, role, id],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found!",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      message: "User updated successfully!",
+      data: result.rows[0],
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+      error: err,
+    });
+  }
+});
+
+app.delete("/api/users/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(`DELETE FROM users WHERE id = $1 RETURNING *`, [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found!",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      message: "User deleted successfully!",
+      data: result.rows[0],
+    });
+  }catch (err: any) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+      error: err,
+    });
+  }
+});
 
 export default app;
