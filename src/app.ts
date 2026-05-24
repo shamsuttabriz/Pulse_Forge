@@ -3,9 +3,7 @@ import express, {
   type Request,
   type Response,
 } from "express";
-import { initDB, pool } from "./db";
 import { userRouter } from "./modules/users/user.route";
-import { userController } from "./modules/users/user.controller";
 
 const app: Application = express();
 
