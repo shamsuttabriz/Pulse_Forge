@@ -1,6 +1,7 @@
 import { pool } from "../../db";
+import type { IUser } from "./user.interface";
 
-const createUserIntoDb = async (payload: any) => {
+const createUserIntoDb = async (payload: IUser) => {
   const { name, email, password, role } = payload;
   const result = await pool.query(
     `
