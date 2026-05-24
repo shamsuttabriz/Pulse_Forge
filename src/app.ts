@@ -1,15 +1,15 @@
-import express, { type Request, type Response } from "express";
-import { Pool } from "pg";
-import config from "./config";
+import express, {
+  type Application,
+  type Request,
+  type Response,
+} from "express";
 import { initDB, pool } from "./db";
 
-const app = express();
+const app: Application = express();
 
 app.use(express.json());
 app.use(express.text());
 app.use(express.urlencoded({ extended: true }));
-
-initDB();
 
 app.get("/", (req: Request, res: Response) => {
   res.status(200).json({ message: "Hello World!" });
@@ -116,7 +116,10 @@ app.put("/api/users/:id", async (req: Request, res: Response) => {
 app.delete("/api/users/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const result = await pool.query(`DELETE FROM users WHERE id = $1 RETURNING *`, [id]);
+    const result = await pool.query(
+      `DELETE FROM users WHERE id = $1 RETURNING *`,
+      [id],
+    );
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
@@ -128,7 +131,7 @@ app.delete("/api/users/:id", async (req: Request, res: Response) => {
       message: "User deleted successfully!",
       data: result.rows[0],
     });
-  }catch (err: any) {
+  } catch (err: any) {
     res.status(500).json({
       success: false,
       message: err.message,
