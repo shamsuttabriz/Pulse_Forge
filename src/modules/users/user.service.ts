@@ -37,9 +37,18 @@ const updateUserInDb = async (id: string, payload: Partial<IUser>) => {
     return result;
 }
 
+const deleteUserFromDb = async (id: string) => {
+    const result = await pool.query(
+      `DELETE FROM users WHERE id = $1 RETURNING *`,
+      [id],
+    );
+    return result;
+}
+
 export const userService = {
   createUserIntoDb,
   getAllUsersFromDb,
   getUserByIdFromDb,
   updateUserInDb,
+  deleteUserFromDb,
 };
