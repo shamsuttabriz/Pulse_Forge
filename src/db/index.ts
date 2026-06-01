@@ -14,7 +14,7 @@ const initDB = async () => {
             name VARCHAR(25),
             email VARCHAR(25) UNIQUE NOT NULL,
             password VARCHAR(255) NOT NULL,
-            role VARCHAR(50) NOT NULL,
+            role VARCHAR(50) NOT NULL DEFAULT 'contributor',
 
             created_at TIMESTAMP DEFAULT NOW(),
             updated_at TIMESTAMP DEFAULT NOW()

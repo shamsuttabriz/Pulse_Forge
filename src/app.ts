@@ -6,7 +6,6 @@ import express, {
 import { userRouter } from "./modules/users/user.route";
 import { issueRouter } from "./modules/issues/issue.route";
 import { authRouter } from "./modules/auth/auth.route";
-import fs from "fs";
 import logger from "./middleware/logger";
 
 const app: Application = express();
