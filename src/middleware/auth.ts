@@ -3,8 +3,9 @@ import config from "../config";
 import jwt, { type JwtPayload } from "jsonwebtoken";
 import { pool } from "../db";
 
-const auth = () => {
+const auth = (...roles: string[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
+    console.log("Auth middleware invoked with roles:", roles);
     try {
       const token = req.headers.authorization;
 
@@ -38,6 +39,13 @@ const auth = () => {
       }
 
       req.user = decoded;
+
+      if (roles.length > 0 && !roles.includes(decoded.role)) {
+        return res.status(403).json({
+          success: false,
+          message: "Forbidden access!",
+        });
+      }
 
       next();
     } catch (err: any) {
