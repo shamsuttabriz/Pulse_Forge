@@ -29,9 +29,7 @@ const getAllUsersFromDb = async () => {
 
 const getUserByIdFromDb = async (id: string) => {
   const result = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
-  if (result.rows.length === 0) {
-    return null;
-  }
+  
   delete result.rows[0].password;
   return result;
 };
@@ -46,9 +44,7 @@ const updateUserInDb = async (id: string, payload: Partial<IUser>) => {
       `,
     [name, hashPassword, role, id],
   );
-  if (result.rows.length === 0) {
-    return null;
-  }
+  
   delete result.rows[0].password;
   return result;
 };
@@ -58,9 +54,6 @@ const deleteUserFromDb = async (id: string) => {
     `DELETE FROM users WHERE id = $1 RETURNING *`,
     [id],
   );
-  if (result.rows.length === 0) {
-    return null;
-  }
   delete result.rows[0].password;
   return result;
 };
