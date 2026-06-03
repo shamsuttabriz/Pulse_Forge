@@ -63,3 +63,4 @@ dist
 .env.test
 .yarn/cache
 .yarn/unplugged
+.vercel
