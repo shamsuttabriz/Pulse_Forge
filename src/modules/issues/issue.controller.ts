@@ -6,10 +6,23 @@ import { pool } from "../../db";
 const createIssue = async (req: Request, res: Response) => {
   try {
     const result = await issueService.createIssueIntoDb(req.body);
+    const issue = result.rows[0];
+    
+    // Fetch reporter details
+    const reporterResult = await pool.query(
+      `SELECT id, name, role FROM users WHERE id = $1`,
+      [req.body.reporter_id]
+    );
+    
+    const issueWithReporter = {
+      ...issue,
+      reporter: reporterResult.rows[0],
+    };
+    
     res.status(201).json({
       success: true,
       message: "Issue created successfully!",
-      data: result.rows[0],
+      data: issueWithReporter,
     });
   } catch (err: any) {
     res.status(500).json({
@@ -22,7 +35,12 @@ const createIssue = async (req: Request, res: Response) => {
 
 const getAllIssues = async (req: Request, res: Response) => {
   try {
-    const result = await issueService.getAllIssuesFromDb();
+    const { sort, type, status } = req.query;
+    const result = await issueService.getAllIssuesFromDb({
+      sort: sort as string,
+      type: type as string,
+      status: status as string,
+    });
     res.status(200).json({
       success: true,
       message: "Issues retrieved successfully!",
@@ -65,10 +83,14 @@ const updateIssue = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const result = await issueService.updateIssueInDb(id as string, req.body);
+    
+    // Fetch the full issue with reporter details
+    const issueResult = await issueService.getIssueByIdFromDb(id as string);
+    
     res.status(200).json({
       success: true,
       message: "Issue updated successfully!",
-      data: result.rows[0],
+      data: issueResult.rows[0],
     });
   } catch (err: any) {
     res.status(500).json({

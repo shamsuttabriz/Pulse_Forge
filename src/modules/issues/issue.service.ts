@@ -19,7 +19,7 @@ const createIssueIntoDb = async (payload: IIssue) => {
     `
         INSERT INTO issues (title, description, type, status, reporter_id)
         VALUES ($1, $2, $3, $4, $5)
-        RETURNING *
+        RETURNING id, title, description, type, status, created_at, updated_at
     `,
     [title, description, type, status || "open", reporter_id],
   );
@@ -27,13 +27,56 @@ const createIssueIntoDb = async (payload: IIssue) => {
   return result;
 };
 
-const getAllIssuesFromDb = async () => {
-  const result = await pool.query("SELECT * FROM issues");
+const getAllIssuesFromDb = async (queryParams?: {
+  sort?: string;
+  type?: string;
+  status?: string;
+}) => {
+  let query = `
+    SELECT i.id, i.title, i.description, i.type, i.status,
+           json_build_object('id', u.id, 'name', u.name, 'role', u.role) as reporter,
+           i.created_at, i.updated_at
+    FROM issues i
+    LEFT JOIN users u ON i.reporter_id = u.id
+    WHERE 1=1
+  `;
+  const params: any[] = [];
+  let paramCount = 1;
+
+  if (queryParams?.type) {
+    query += ` AND i.type = $${paramCount}`;
+    params.push(queryParams.type);
+    paramCount++;
+  }
+
+  if (queryParams?.status) {
+    query += ` AND i.status = $${paramCount}`;
+    params.push(queryParams.status);
+    paramCount++;
+  }
+
+  if (queryParams?.sort === "oldest") {
+    query += ` ORDER BY i.created_at ASC`;
+  } else {
+    query += ` ORDER BY i.created_at DESC`;
+  }
+
+  const result = await pool.query(query, params);
   return result;
 };
 
 const getIssueByIdFromDb = async (id: string) => {
-  const result = await pool.query("SELECT * FROM issues WHERE id = $1", [id]);
+  const result = await pool.query(
+    `
+      SELECT i.id, i.title, i.description, i.type, i.status,
+             json_build_object('id', u.id, 'name', u.name, 'role', u.role) as reporter,
+             i.created_at, i.updated_at
+      FROM issues i
+      LEFT JOIN users u ON i.reporter_id = u.id
+      WHERE i.id = $1
+    `,
+    [id],
+  );
   return result;
 };
 
@@ -42,7 +85,7 @@ const updateIssueInDb = async (id: string, payload: Partial<IIssue>) => {
   const result = await pool.query(
     `
      UPDATE issues SET title = COALESCE($1, title), description = COALESCE($2, description), type = COALESCE($3, type), status = COALESCE($4, status)
-     WHERE id = $5 RETURNING *
+     WHERE id = $5 RETURNING id, title, description, type, status, created_at, updated_at
    `,
     [title, description, type, status, id],
   );
