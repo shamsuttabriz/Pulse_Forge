@@ -17,3 +17,7 @@ Method: PUT, URL: /api/issues/1, Time: Wed Jun 03 2026 22:53:56 GMT+0600 (Bangla
 Method: GET, URL: /api/issues, Time: Wed Jun 03 2026 22:54:55 GMT+0600 (Bangladesh Standard Time)
 Method: GET, URL: /api/issues?status=open, Time: Wed Jun 03 2026 22:56:01 GMT+0600 (Bangladesh Standard Time)
 Method: GET, URL: /api/issues?status=in_progress, Time: Wed Jun 03 2026 22:56:24 GMT+0600 (Bangladesh Standard Time)
+Method: GET, URL: /, Time: Thu Jun 04 2026 01:29:32 GMT+0600 (Bangladesh Standard Time)
+Method: GET, URL: /favicon.ico, Time: Thu Jun 04 2026 01:29:32 GMT+0600 (Bangladesh Standard Time)
+Method: GET, URL: /api/users, Time: Thu Jun 04 2026 01:29:45 GMT+0600 (Bangladesh Standard Time)
+Method: GET, URL: /api/issues, Time: Thu Jun 04 2026 01:29:52 GMT+0600 (Bangladesh Standard Time)

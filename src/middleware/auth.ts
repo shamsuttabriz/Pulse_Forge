@@ -6,7 +6,6 @@ import type { ROLES } from "../types";
 
 const auth = (...roles: ROLES[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
-    console.log("Auth middleware invoked with roles:", roles);
     try {
       const token = req.headers.authorization;
 
@@ -22,15 +21,11 @@ const auth = (...roles: ROLES[]) => {
         config.jwt_secret,
       ) as JwtPayload;
 
-      // console.log("Decoded JWT Payload:", decoded);
 
       const userData = await pool.query(
         `SELECT * FROM users WHERE email = $1`,
         [decoded.email],
       );
-
-      // const user = userData.rows[0];
-      // console.log("User data from DB:", user);
 
       if (userData.rows.length === 0) {
         return res.status(404).json({
