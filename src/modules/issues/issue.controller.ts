@@ -82,15 +82,52 @@ const getIssueById = async (req: Request, res: Response) => {
 const updateIssue = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    
+    // Check authorization: get the issue first
+    const issueResult = await issueService.getIssueByIdFromDb(id as string);
+    if (issueResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Issue not found!",
+      });
+    }
+    
+    const issue = issueResult.rows[0];
+    const user = req.user as any;
+    
+    // Get current user's ID from database
+    const userResult = await pool.query(
+      `SELECT id FROM users WHERE email = $1`,
+      [user.email]
+    );
+    
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found!",
+      });
+    }
+    
+    const userId = userResult.rows[0].id;
+    
+    // Authorization check: maintainer can update any issue, contributor can only update their own
+    if (user.role === "contributor" && issue.reporter.id !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only update your own issues!",
+      });
+    }
+    
+    // Update the issue
     const result = await issueService.updateIssueInDb(id as string, req.body);
     
     // Fetch the full issue with reporter details
-    const issueResult = await issueService.getIssueByIdFromDb(id as string);
+    const updatedIssueResult = await issueService.getIssueByIdFromDb(id as string);
     
     res.status(200).json({
       success: true,
       message: "Issue updated successfully!",
-      data: issueResult.rows[0],
+      data: updatedIssueResult.rows[0],
     });
   } catch (err: any) {
     res.status(500).json({
