@@ -11,8 +11,8 @@ const initDB = async () => {
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
 
-            name VARCHAR(25),
-            email VARCHAR(25) UNIQUE NOT NULL,
+            name VARCHAR(255),
+            email TEXT UNIQUE NOT NULL,
             password VARCHAR(255) NOT NULL,
             role VARCHAR(50) NOT NULL DEFAULT 'contributor',
 
