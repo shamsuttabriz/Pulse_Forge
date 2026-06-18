@@ -55,11 +55,11 @@ const loginUserIntoDb = async (payload: {
     updated_at: user.updated_at,
   };
 
-  const accessToken = jwt.sign(jwtPayload, config.jwt_secret, {
+  const token = jwt.sign(jwtPayload, config.jwt_secret, {
     expiresIn: "1d",
   });
 
-  return { accessToken, user: jwtPayload };
+  return { token, user: jwtPayload };
 };
 
 export const authService = {

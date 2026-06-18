@@ -1,28 +1,20 @@
 import type { Request, Response } from "express";
 import { issueService } from "./issue.service";
-import type { IIssue } from "./issue.interface";
 import { pool } from "../../db";
 
 const createIssue = async (req: Request, res: Response) => {
   try {
-    const result = await issueService.createIssueIntoDb(req.body);
-    const issue = result.rows[0];
-    
-    // Fetch reporter details
-    const reporterResult = await pool.query(
-      `SELECT id, name, role FROM users WHERE id = $1`,
-      [req.body.reporter_id]
+    const result = await issueService.createIssueIntoDb(
+      req.body,
+      req.user as any,
     );
-    
-    const issueWithReporter = {
-      ...issue,
-      reporter: reporterResult.rows[0],
-    };
-    
+
+    const issue = result.rows[0];
+
     res.status(201).json({
       success: true,
-      message: "Issue created successfully!",
-      data: issueWithReporter,
+      message: "Issue created successfully",
+      data: issue,
     });
   } catch (err: any) {
     res.status(500).json({
@@ -82,58 +74,50 @@ const getIssueById = async (req: Request, res: Response) => {
 const updateIssue = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
-    // Check authorization: get the issue first
+
     const issueResult = await issueService.getIssueByIdFromDb(id as string);
+
     if (issueResult.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: "Issue not found!",
       });
     }
-    
+
     const issue = issueResult.rows[0];
     const user = req.user as any;
-    
-    // Get current user's ID from database
+
     const userResult = await pool.query(
       `SELECT id FROM users WHERE email = $1`,
-      [user.email]
+      [user.email],
     );
-    
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found!",
-      });
-    }
-    
+
     const userId = userResult.rows[0].id;
-    
-    // Authorization check: maintainer can update any issue, contributor can only update their own
+
     if (user.role === "contributor" && issue.reporter.id !== userId) {
       return res.status(403).json({
         success: false,
         message: "You can only update your own issues!",
       });
     }
-    
-    // Update the issue
-    const result = await issueService.updateIssueInDb(id as string, req.body);
-    
-    // Fetch the full issue with reporter details
-    const updatedIssueResult = await issueService.getIssueByIdFromDb(id as string);
-    
+
+    // Automatically update status from "open" to "in_progress" if not explicitly provided
+    const updatePayload = { ...req.body };
+    if (issue.status === "open" && !updatePayload.status) {
+      updatePayload.status = "in_progress";
+    }
+
+    const result = await issueService.updateIssueInDb(id as string, updatePayload);
+
     res.status(200).json({
       success: true,
-      message: "Issue updated successfully!",
-      data: updatedIssueResult.rows[0],
+      message: "Issue updated successfully",
+      data: result.rows[0],
     });
   } catch (err: any) {
     res.status(500).json({
       success: false,
       message: err.message,
-      error: err,
     });
   }
 };

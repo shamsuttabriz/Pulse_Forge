@@ -1,14 +1,15 @@
 import { pool } from "../../db";
 import type { IIssue } from "./issue.interface";
 
-const createIssueIntoDb = async (payload: IIssue) => {
-  const { title, description, type, status, reporter_id } = payload;
+const createIssueIntoDb = async (payload: IIssue, user: any) => {
+  const { title, description, type, status } = payload;
 
   const reporter = await pool.query(
     `
-        SELECT * FROM users WHERE id = $1
+    SELECT * FROM users
+    WHERE id = $1
     `,
-    [reporter_id],
+    [user.id],
   );
 
   if (reporter.rows.length === 0) {
@@ -17,11 +18,12 @@ const createIssueIntoDb = async (payload: IIssue) => {
 
   const result = await pool.query(
     `
-        INSERT INTO issues (title, description, type, status, reporter_id)
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING id, title, description, type, status, created_at, updated_at
+    INSERT INTO issues
+    (title, description, type, status, reporter_id)
+    VALUES ($1, $2, $3, $4, $5)
+    RETURNING *
     `,
-    [title, description, type, status || "open", reporter_id],
+    [title, description, type, status || "open", user.id],
   );
 
   return result;
@@ -82,13 +84,30 @@ const getIssueByIdFromDb = async (id: string) => {
 
 const updateIssueInDb = async (id: string, payload: Partial<IIssue>) => {
   const { title, description, type, status } = payload;
+
   const result = await pool.query(
     `
-     UPDATE issues SET title = COALESCE($1, title), description = COALESCE($2, description), type = COALESCE($3, type), status = COALESCE($4, status)
-     WHERE id = $5 RETURNING id, title, description, type, status, created_at, updated_at
-   `,
+    UPDATE issues
+    SET
+      title = COALESCE($1, title),
+      description = COALESCE($2, description),
+      type = COALESCE($3, type),
+      status = COALESCE($4, status),
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = $5
+    RETURNING
+      id,
+      title,
+      description,
+      type,
+      status,
+      reporter_id,
+      created_at,
+      updated_at
+    `,
     [title, description, type, status, id],
   );
+
   return result;
 };
 
